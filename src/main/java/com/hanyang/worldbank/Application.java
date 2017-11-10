@@ -21,11 +21,11 @@ public class Application {
     // Hold a reusable reference to SessionFactory
     private static final SessionFactory sessionFactory = buildSessionFactory();
     private static final List<String> menu = Arrays.asList(
-            "Viewing data table(use 'viewd' for option)",
-            "Viewing statistics(use 'views' for option)",
-            "Adding a country(use 'add' for option)",
-            "Editing a country(use 'edit' for option)",
-            "Deleting a country(use 'delete' for option)"
+            "Viewing data table(or 'viewd')",
+            "Viewing statistics(or 'views')",
+            "Adding a country(or 'add')",
+            "Editing a country(or 'edit')",
+            "Deleting a country(or 'delete')"
     );
     private static BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
@@ -46,16 +46,23 @@ public class Application {
                 choice = promptForAction();
                 switch(choice) {
                     case "viewd":
+                    case "viewing data table":
                         List<Country> countries = fetchAllCountries();
                         countries.stream().forEach(System.out::println);
                         break;
                     case "views":
+                    case "Viewing statistics":
                         break;
                     case "add":
+                    case "adding a country":
+                        insert();
                         break;
                     case "edit":
+                    case "editing a country":
                         break;
                     case "delete":
+                    case "deleting a country":
+                        delete();
                         break;
                     case "quit":
                         System.out.println("Exiting...");
@@ -81,7 +88,7 @@ public class Application {
         return choice;
     }
 
-    private static Country findCoutryByCode(String code) {
+    private static Country findCountryByCode(String code) {
         // Open a session
         Session session = sessionFactory.openSession();
 
@@ -97,36 +104,89 @@ public class Application {
 
     private static void insert() throws IOException{
         String code = "", name ="";
-        Long internetUsers = new Long(0), adultLiteracyRate = new Long(0);
+        Double internetUsers = new Double(0), adultLiteracyRate = new Double(0);
+
         boolean canAdd = false;
         do {
             System.out.println("Please enter country code:");
             code = reader.readLine();
-            if (code.length() > 0 && code.length() < 4 && findCoutryByCode(code) == null) {
+            if (code.length() > 0 && code.length() < 4 && findCountryByCode(code) == null) {
                 canAdd  = true;
             }else {
                 System.out.println("Country code already exists!");
                 continue;
             }
-
-            System.out.println("Please enter country name:");
-            name = reader.readLine();
-
-            System.out.println("Please enter internet users rate (e.g. 19.5 represents 19.5%");
-            internetUsers = Long.valueOf(reader.readLine());
-
-            System.out.println("Please enter adult literacy rate (e.g. 19.5 represents 19.5%");
-            adultLiteracyRate = Long.valueOf(reader.readLine());
         } while (!canAdd);
+
+        System.out.println("Please enter country name(Note: the maximum length of name is 32):");
+        name = reader.readLine();
+        name = name.substring(0, Math.min(name.length(), 32));
+
+        canAdd = false;
+        do {
+            try {
+                System.out.println("Please enter internet users rate");
+                internetUsers = Double.valueOf(reader.readLine());
+                if (internetUsers > 100 || internetUsers < 0) {
+                    System.out.println("Please use a number between 0 and 100");
+                    continue;
+                }
+                canAdd = true;
+            }catch (NumberFormatException nfe) {
+                System.out.println(nfe.getMessage());
+                nfe.printStackTrace();
+            }
+        }while (!canAdd);
+
+        canAdd = false;
+        do {
+            try {
+                System.out.println("Please enter adult literacy rate");
+                adultLiteracyRate = Double.valueOf(reader.readLine());
+                if (adultLiteracyRate > 100 || adultLiteracyRate < 0) {
+                    System.out.println("Please use a number between 0 and 100");
+                    continue;
+                }
+                canAdd = true;
+            }catch (NumberFormatException nfe) {
+                System.out.println(nfe.getMessage());
+                nfe.printStackTrace();
+            }
+        }while (!canAdd);
+
+
+        Country country = new CountryBuilder(code, name)
+                .withInternetUsers(internetUsers)
+                .withAdultLiteratyRate(adultLiteracyRate)
+                .build();
+
+        save(country);
+    }
+
+    private static void save(Country country) {
+        // Open a session
+        Session session = sessionFactory.openSession();
+
+        // Begin a transaction
+        session.beginTransaction();
+
+        // Use the session to save the contact
+        session.save(country);
+
+        // Commit the transaction
+        session.getTransaction().commit();
+
+        // Close the session
+        session.close();
     }
 
     private static void edit() throws IOException{
         String code = reader.readLine();
-        Country country = findCoutryByCode(code);
+        Country country = findCountryByCode(code);
         while (country == null) {
             System.out.println("Please enter a valid code:");
             code = reader.readLine();
-            country = findCoutryByCode(code);
+            country = findCountryByCode(code);
         }
 
         String newCode = "";
@@ -169,5 +229,39 @@ public class Application {
         session.close();
 
         return countries;
+    }
+
+    private static void delete() {
+        // Open a session
+        Session session = sessionFactory.openSession();
+        session.beginTransaction();
+
+        boolean found = false;
+        do {
+            String code;
+            try {
+                code = promptForCode();
+                if (code.length() < 0 || code.length() > 100) {
+                    continue;
+                }
+                found = true;
+                Country country = findCountryByCode(code);
+                System.out.println("Deleting...");
+                session.delete(country);
+                session.getTransaction().commit();
+                System.out.println("Delete complete!");
+            }catch (IOException ioe) {
+                System.out.println(ioe.getMessage());
+                ioe.printStackTrace();
+            }
+        }while (!found);
+
+        session.close();
+    }
+
+    private static String promptForCode() throws IOException{
+        System.out.println("Please enter the code of the country you want to delete");
+        String code = reader.readLine();
+        return code;
     }
 }
