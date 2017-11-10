@@ -14,10 +14,10 @@ public class Country {
     private String name;
 
     @Column
-    private Long internetUsers;
+    private Double internetUsers;
 
     @Column
-    private Long adultLiteracyRate;
+    private Double adultLiteracyRate;
 
     public Country() {}
 
@@ -33,8 +33,8 @@ public class Country {
         return "Country{" +
                 "code='" + code + '\'' +
                 ", name='" + name + '\'' +
-                ", internetUsers=" + internetUsers +
-                ", adultLiteracyRate=" + (adultLiteracyRate == null ? "--" : Math.round(adultLiteracyRate * 100.0) / 100.0) +
+                ", internetUsers=" + (internetUsers == null ? "--" : String.format("%.2f", internetUsers))+
+                ", adultLiteracyRate=" + (adultLiteracyRate == null ? "--" : String.format("%.2f", adultLiteracyRate)) +
                 '}';
     }
 
@@ -54,39 +54,39 @@ public class Country {
         this.name = name;
     }
 
-    public Long getInternetUsers() {
+    public Double getInternetUsers() {
         return internetUsers;
     }
 
-    public void setInternetUsers(Long internetUsers) {
+    public void setInternetUsers(Double internetUsers) {
         this.internetUsers = internetUsers;
     }
 
-    public Long getAdultLiteracyRate() {
+    public Double getAdultLiteracyRate() {
         return adultLiteracyRate;
     }
 
-    public void setAdultLiteracyRate(Long adultLiteracyRate) {
+    public void setAdultLiteracyRate(Double adultLiteracyRate) {
         this.adultLiteracyRate = adultLiteracyRate;
     }
 
     public static class CountryBuilder {
         private String code;
         private String name;
-        private Long internetUsers;
-        private Long adultLiteracyRate;
+        private Double internetUsers;
+        private Double adultLiteracyRate;
 
         public CountryBuilder(String code, String name) {
             this.code = code;
             this.name = name;
         }
 
-        public CountryBuilder withInternetUsers(Long internetUsers) {
+        public CountryBuilder withInternetUsers(Double internetUsers) {
             this.internetUsers = internetUsers;
             return this;
         }
 
-        public CountryBuilder withAdultLiteratyRate(Long adultLiteracyRate) {
+        public CountryBuilder withAdultLiteratyRate(Double adultLiteracyRate) {
             this.adultLiteracyRate = adultLiteracyRate;
             return this;
         }
