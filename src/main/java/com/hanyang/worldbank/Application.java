@@ -75,6 +75,103 @@ public class Application {
         }while (!choice.toLowerCase().equals("quit"));
     }
 
+    //============ Viewing data table ================
+    private static List<Country> fetchAllCountries() {
+        // Open a session
+        Session session = sessionFactory.openSession();
+
+        // Create CriteriaBuilder
+        CriteriaBuilder builder = session.getCriteriaBuilder();
+
+        //  Create CriteriaQuery
+        CriteriaQuery<Country> criteria = builder.createQuery(Country.class);
+
+        // Specify criteria root
+        criteria.from(Country.class);
+
+        // Execute query
+        List<Country> countries = session.createQuery(criteria).getResultList();
+
+        // Close the session
+        session.close();
+
+        return countries;
+    }
+
+    // ============ Viewing statistics ==================
+    private static void getStatistics() {
+        List<Country> countries = fetchAllCountries();
+        double maxInternetUsers = 0, maxAdultLiteracyRate = 0;
+        double minInternetUsers = 0, minAdultLiteracyRate = 0;
+
+        double sumInternetAdult, sumInternetUsers, sumAdultLiteracyRate, sumInternetUsersSquare, sumAdultLiteracyRateSquare;
+        sumInternetAdult = sumInternetUsers = sumAdultLiteracyRate = sumInternetUsersSquare = sumAdultLiteracyRateSquare = 0;
+
+        countries.stream().forEach(c -> {
+            // Any countries with missing data will not be included
+            if (c.getInternetUsers() != null && c.getAdultLiteracyRate() != null) {
+
+            }
+        });
+    }
+
+    // ============ Adding a country =====================
+    private static void insert() throws IOException{
+        Country country = promptForInformation(false);
+        save(country);
+    }
+
+    // ============ Editing a country ====================
+    private static void edit() throws IOException{
+        System.out.println("Please enter the code of the country you want to edit:");
+        String code = reader.readLine();
+        Country country = findCountryByCode(code);
+        while (country == null) {
+            System.out.println("Please enter a valid code:");
+            code = reader.readLine();
+            country = findCountryByCode(code);
+        }
+
+        // Assign new information
+        Country temp = promptForInformation(true);
+        country.setCode(temp.getCode().isEmpty() ? country.getCode() : temp.getCode());
+        country.setName(temp.getName().isEmpty() ? country.getName() : temp.getName());
+        country.setInternetUsers(temp.getInternetUsers() == null ? country.getInternetUsers() : temp.getInternetUsers());
+        country.setAdultLiteracyRate(temp.getAdultLiteracyRate() == null ? country.getAdultLiteracyRate() : temp.getAdultLiteracyRate());
+
+        update(country);
+    }
+
+    // ============= Delete a country =====================
+    private static void delete() {
+        // Open a session
+        Session session = sessionFactory.openSession();
+        session.beginTransaction();
+
+        boolean found = false;
+        do {
+            String code;
+            try {
+                code = promptForCode();
+                if (code.length() < 0 || code.length() > 100) {
+                    continue;
+                }
+                found = true;
+                Country country = findCountryByCode(code);
+                System.out.println("Deleting...");
+                session.delete(country);
+                session.getTransaction().commit();
+                System.out.println("Delete complete!");
+            }catch (IOException ioe) {
+                System.out.println(ioe.getMessage());
+                ioe.printStackTrace();
+            }
+        }while (!found);
+
+        session.close();
+    }
+
+    // =========================================================
     private static String promptForAction() throws IOException {
         System.out.println("menu:");
         for (String option : menu) {
@@ -100,11 +197,6 @@ public class Application {
 
         // Return the object
         return country;
-    }
-
-    private static void insert() throws IOException{
-        Country country = promptForInformation(false);
-        save(country);
     }
 
     private static void save(Country country) {
@@ -189,26 +281,6 @@ public class Application {
                 .build();
     }
 
-    private static void edit() throws IOException{
-        System.out.println("Please enter the code of the country you want to edit:");
-        String code = reader.readLine();
-        Country country = findCountryByCode(code);
-        while (country == null) {
-            System.out.println("Please enter a valid code:");
-            code = reader.readLine();
-            country = findCountryByCode(code);
-        }
-
-        // Assign new information
-        Country temp = promptForInformation(true);
-        country.setCode(temp.getCode().isEmpty() ? country.getCode() : temp.getCode());
-        country.setName(temp.getName().isEmpty() ? country.getName() : temp.getName());
-        country.setInternetUsers(temp.getInternetUsers() == null ? country.getInternetUsers() : temp.getInternetUsers());
-        country.setAdultLiteracyRate(temp.getAdultLiteracyRate() == null ? country.getAdultLiteracyRate() : temp.getAdultLiteracyRate());
-
-        update(country);
-    }
-
     private static void update(Country country) {
         // Open a session
         Session session = sessionFactory.openSession();
@@ -223,56 +295,6 @@ public class Application {
         session.getTransaction().commit();
 
         // Close the session
-        session.close();
-    }
-
-    private static List<Country> fetchAllCountries() {
-        // Open a session
-        Session session = sessionFactory.openSession();
-
-        // Create CriteriaBuilder
-        CriteriaBuilder builder = session.getCriteriaBuilder();
-
-        //  Create CriteriaQuery
-        CriteriaQuery<Country> criteria = builder.createQuery(Country.class);
-
-        // Specify criteria root
-        criteria.from(Country.class);
-
-        // Execute query
-        List<Country> countries = session.createQuery(criteria).getResultList();
-
-        // Close the session
-        session.close();
-
-        return countries;
-    }
-
-    private static void delete() {
-        // Open a session
-        Session session = sessionFactory.openSession();
-        session.beginTransaction();
-
-        boolean found = false;
-        do {
-            String code;
-            try {
-                code = promptForCode();
-                if (code.length() < 0 || code.length() > 100) {
-                    continue;
-                }
-                found = true;
-                Country country = findCountryByCode(code);
-                System.out.println("Deleting...");
-                session.delete(country);
-                session.getTransaction().commit();
-                System.out.println("Delete complete!");
-            }catch (IOException ioe) {
-                System.out.println(ioe.getMessage());
-                ioe.printStackTrace();
-            }
-        }while (!found);
-
         session.close();
     }
 
