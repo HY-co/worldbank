@@ -59,6 +59,7 @@ public class Application {
                         break;
                     case "edit":
                     case "editing a country":
+                        edit();
                         break;
                     case "delete":
                     case "deleting a country":
@@ -67,7 +68,6 @@ public class Application {
                     case "quit":
                         System.out.println("Exiting...");
                 }
-
             }catch (IOException ioe) {
                 System.out.println(ioe.getMessage());
                 ioe.printStackTrace();
@@ -103,63 +103,7 @@ public class Application {
     }
 
     private static void insert() throws IOException{
-        String code = "", name ="";
-        Double internetUsers = new Double(0), adultLiteracyRate = new Double(0);
-
-        boolean canAdd = false;
-        do {
-            System.out.println("Please enter country code:");
-            code = reader.readLine();
-            if (code.length() > 0 && code.length() < 4 && findCountryByCode(code) == null) {
-                canAdd  = true;
-            }else {
-                System.out.println("Country code already exists!");
-                continue;
-            }
-        } while (!canAdd);
-
-        System.out.println("Please enter country name(Note: the maximum length of name is 32):");
-        name = reader.readLine();
-        name = name.substring(0, Math.min(name.length(), 32));
-
-        canAdd = false;
-        do {
-            try {
-                System.out.println("Please enter internet users rate");
-                internetUsers = Double.valueOf(reader.readLine());
-                if (internetUsers > 100 || internetUsers < 0) {
-                    System.out.println("Please use a number between 0 and 100");
-                    continue;
-                }
-                canAdd = true;
-            }catch (NumberFormatException nfe) {
-                System.out.println(nfe.getMessage());
-                nfe.printStackTrace();
-            }
-        }while (!canAdd);
-
-        canAdd = false;
-        do {
-            try {
-                System.out.println("Please enter adult literacy rate");
-                adultLiteracyRate = Double.valueOf(reader.readLine());
-                if (adultLiteracyRate > 100 || adultLiteracyRate < 0) {
-                    System.out.println("Please use a number between 0 and 100");
-                    continue;
-                }
-                canAdd = true;
-            }catch (NumberFormatException nfe) {
-                System.out.println(nfe.getMessage());
-                nfe.printStackTrace();
-            }
-        }while (!canAdd);
-
-
-        Country country = new CountryBuilder(code, name)
-                .withInternetUsers(internetUsers)
-                .withAdultLiteratyRate(adultLiteracyRate)
-                .build();
-
+        Country country = promptForInformation(false);
         save(country);
     }
 
@@ -180,7 +124,73 @@ public class Application {
         session.close();
     }
 
+    private static Country promptForInformation(boolean isEdit) throws IOException {
+        String code = null, name = null;
+        Double internetUsers = null, adultLiteracyRate = null;
+
+        boolean canAdd = false;
+        do {
+            System.out.println("Please enter country code" + (isEdit ? " (press 'enter' if you do not want to change)" : "") +":");
+            code = reader.readLine();
+            if (!isEdit && code.length() > 0 && code.length() < 4 && findCountryByCode(code) == null
+                || isEdit && code.isEmpty()) {
+                canAdd  = true;
+            }else {
+                System.out.println("Country code already exists!");
+                continue;
+            }
+            //System.out.println(code);
+        } while (!canAdd);
+
+        System.out.println("Please enter country name(Note: the maximum length of name is 32)" +
+                (isEdit ? " (press 'enter' if you do not want to change)" : "") +":");
+        name = reader.readLine();
+        name = name.substring(0, Math.min(name.length(), 32));
+
+        canAdd = false;
+        do {
+            try {
+                System.out.println("Please enter internet users rate" + (isEdit ? " (press 'enter' if you do not want to change)" : "") +":");
+                String internetUsersStr = reader.readLine();
+                internetUsers = internetUsersStr.isEmpty() ? null : Double.valueOf(internetUsersStr);
+                if (!isEdit && (internetUsers == null || internetUsers > 100 || internetUsers < 0)
+                    || isEdit && internetUsers != null && (internetUsers > 100 || internetUsers < 0)) {
+                    System.out.println("Please use a number between 0 and 100");
+                    continue;
+                }
+                canAdd = true;
+            }catch (NumberFormatException nfe) {
+                System.out.println(nfe.getMessage());
+                nfe.printStackTrace();
+            }
+        }while (!canAdd);
+
+        canAdd = false;
+        do {
+            try {
+                System.out.println("Please enter adult literacy rate" + (isEdit ? " (press 'enter' if you do not want to change)" : "") +":");
+                String adultLiteracyRateStr = reader.readLine();
+                adultLiteracyRate = adultLiteracyRateStr.isEmpty() ? null : Double.valueOf(adultLiteracyRateStr);
+                if (!isEdit && (adultLiteracyRate == null || adultLiteracyRate > 100 || adultLiteracyRate < 0)
+                        || isEdit && adultLiteracyRate != null && (adultLiteracyRate > 100 || adultLiteracyRate < 0)) {
+                    System.out.println("Please use a number between 0 and 100");
+                    continue;
+                }
+                canAdd = true;
+            }catch (NumberFormatException nfe) {
+                System.out.println(nfe.getMessage());
+                nfe.printStackTrace();
+            }
+        }while (!canAdd);
+
+        return new CountryBuilder(code, name)
+                .withInternetUsers(internetUsers)
+                .withAdultLiteratyRate(adultLiteracyRate)
+                .build();
+    }
+
     private static void edit() throws IOException{
+        System.out.println("Please enter the code of the country you want to edit:");
         String code = reader.readLine();
         Country country = findCountryByCode(code);
         while (country == null) {
@@ -189,7 +199,14 @@ public class Application {
             country = findCountryByCode(code);
         }
 
-        String newCode = "";
+        // Assign new information
+        Country temp = promptForInformation(true);
+        country.setCode(temp.getCode().isEmpty() ? country.getCode() : temp.getCode());
+        country.setName(temp.getName().isEmpty() ? country.getName() : temp.getName());
+        country.setInternetUsers(temp.getInternetUsers() == null ? country.getInternetUsers() : temp.getInternetUsers());
+        country.setAdultLiteracyRate(temp.getAdultLiteracyRate() == null ? country.getAdultLiteracyRate() : temp.getAdultLiteracyRate());
+
+        update(country);
     }
 
     private static void update(Country country) {
